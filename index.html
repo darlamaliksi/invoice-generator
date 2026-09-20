@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Generator Prototype</title>
+<style>
+:root{
+  --blue:#1769e0; --bg:#f4f7fb; --border:#dfe5ee; --text:#17233a; --muted:#687386;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,textarea,select{font:inherit}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+.sidebar{background:#fff;border-right:1px solid var(--border);padding:22px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{font-size:20px;font-weight:900}.sub{font-size:12px;color:var(--muted);margin-top:3px;margin-bottom:22px}
+.section{margin:19px 0;padding-top:2px}.section h4{font-size:13px;margin:0 0 9px}
+.field{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text);font-size:12px;margin-bottom:7px}
+textarea.field{min-height:58px;resize:vertical}
+.theme{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.theme button{border:1px solid var(--border);border-radius:9px;background:#fff;padding:10px 5px;cursor:pointer;font-weight:800;font-size:12px}
+.theme button.active{border:2px solid var(--blue);color:var(--blue)}
+.theme small{font-weight:500;color:var(--muted)}
+.swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 5px}
+.swatch{border:0;background:none;padding:0;cursor:pointer;font-size:9px;color:#526074}
+.dot{display:block;width:27px;height:27px;border-radius:50%;margin:0 auto 3px;border:2px solid #fff;box-shadow:0 0 0 1px #cfd6df}
+.upload{display:block;border:1px dashed #aeb8c7;border-radius:9px;padding:16px;text-align:center;color:#607086;font-size:11px;cursor:pointer}
+.upload input{display:none}
+.check{display:flex;align-items:center;gap:7px;font-size:11px;margin:8px 0;color:#455267}
+.primary,.secondary{width:100%;border:0;border-radius:8px;padding:12px;font-weight:900;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.secondary{background:#edf1f6;color:#334155;margin-top:8px}
+.main{padding:18px 20px 30px;overflow:auto}
+.toolbar{max-width:1140px;margin:0 auto 15px;display:flex;justify-content:center;gap:12px;align-items:center}
+.mode-pill{padding:8px 20px;border-radius:30px;background:#dcecff;color:#173b73;font-size:12px;font-weight:900}
+.mode-pill.dark{background:#202833;color:#fff}
+.mode-note{font-size:11px;color:var(--muted)}
+.previews{display:grid;grid-template-columns:minmax(430px,1fr) minmax(430px,1fr);gap:18px;max-width:1140px;margin:auto}
+.preview-card{min-width:0}
+.preview-label{text-align:center;font-size:11px;font-weight:900;color:#667287;margin-bottom:7px}
+.paper{
+  --accent:#1769e0;
+  --accentText:#fff;
+  --accentSoft:#eef5ff;
+  min-height:930px;padding:34px 38px 65px;border-radius:4px;position:relative;
+  box-shadow:0 7px 24px rgba(20,35,58,.13);overflow:hidden;
+}
+.paper.light{background:#fff;color:#17233a;border-top:8px solid var(--accent)}
+.paper.dark{background:#1c222b;color:#f4f7fa;border-top:8px solid var(--accent)}
+.paper.selected{outline:3px solid rgba(23,105,224,.35);outline-offset:3px}
+.paper-head{display:grid;grid-template-columns:1fr auto;gap:18px;border-bottom:1px solid #dce2ea;padding-bottom:19px}
+.dark .paper-head{border-color:#3a4553}
+.logo{width:43px;height:43px;border-radius:9px;background:var(--accentSoft);display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:900;float:left;margin-right:10px;overflow:hidden}
+.dark .logo{background:#303944}
+.logo img{max-width:100%;max-height:100%;object-fit:contain}
+.biz{font-size:18px;font-weight:900;padding-top:4px}.small{font-size:10px;line-height:1.55;color:#69768a}
+.dark .small{color:#c2cad4}
+.invtitle{font-size:32px;font-weight:900;color:var(--accent);text-align:right}
+.dark .invtitle{color:var(--accent)}
+.meta{text-align:right;font-size:10px;line-height:1.75;color:#69768a}
+.dark .meta{color:#d1d7df}
+.bill{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0 17px}
+.card{padding:12px;border-radius:5px;background:var(--accentSoft);border:1px solid color-mix(in srgb,var(--accent) 14%,#fff)}
+.dark .card{background:#2a323d;border-color:#414c59}
+.label{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);margin-bottom:5px}
+.dark .label{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{background:var(--accent);color:var(--accentText);padding:9px 7px;text-align:left}
+td{padding:10px 7px;border-bottom:1px solid #e1e6ed}
+.dark td{border-color:#3b4654}
+th:not(:first-child),td:not(:first-child){text-align:right}
+.bottom{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.note,.summary{border:1px solid #e0e6ee;border-radius:5px;padding:11px;font-size:10px}
+.dark .note,.dark .summary{border-color:#3b4654;background:#252c35}
+.summary div{display:flex;justify-content:space-between;gap:10px;padding:4px 0}
+.total{background:var(--accent);color:var(--accentText)!important;font-weight:900;font-size:14px;padding:10px!important;margin-top:5px;border-radius:3px}
+.signature{margin-top:62px;text-align:right;font-size:10px}.sigline{width:145px;border-top:1px solid currentColor;margin:0 0 5px auto}
+.footer{position:absolute;bottom:25px;left:38px;right:38px;border-top:2px solid var(--accent);padding-top:9px;text-align:center;font-size:10px;font-weight:900;color:var(--accent)}
+.dark .footer{color:var(--accent)}
+.note-text{color:#69768a}.dark .note-text{color:#c2cad4}
+@media(max-width:1100px){.app{grid-template-columns:250px 1fr}.previews{grid-template-columns:1fr}.paper{min-height:850px}}
+@media(max-width:720px){.app{display:block}.sidebar{position:relative;height:auto}.main{padding:12px}.toolbar{flex-wrap:wrap}.paper{padding:28px 24px 65px}.bill,.bottom{grid-template-columns:1fr}}
+@media print{
+  body{background:#fff}.sidebar,.toolbar,.preview-label{display:none!important}.app{display:block}.main{padding:0}.previews{display:block}.preview-card:not(.print-selected){display:none}.paper{box-shadow:none;min-height:1123px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">Invoice Design</div>
+  <div class="sub">Choose your style and customize your invoice.</div>
+
+  <div class="section">
+    <h4>Business Information</h4>
+    <input class="field bind" id="businessName" placeholder="Business Name" value="YOUR BUSINESS NAME">
+    <input class="field bind" id="businessTagline" placeholder="Tagline (optional)" value="Quality Products. Better Service.">
+    <input class="field bind" id="businessContact" placeholder="Phone / Email" value="+63 917 123 4567 · your@email.ph">
+    <textarea class="field bind" id="businessAddress" placeholder="Business Address">123 Business St., Makati City</textarea>
+  </div>
+
+  <div class="section">
+    <h4>Invoice Information</h4>
+    <input class="field bind" id="invoiceNumber" placeholder="Invoice Number" value="INV-2026-001">
+    <input class="field bind" id="invoiceDate" placeholder="Invoice Date" value="September 20, 2026">
+    <input class="field bind" id="dueDate" placeholder="Due Date" value="October 20, 2026">
+    <input class="field bind" id="terms" placeholder="Payment Terms" value="Net 30">
+  </div>
+
+  <div class="section">
+    <h4>Customer Information</h4>
+    <input class="field bind" id="customerName" placeholder="Customer Name" value="Juan Dela Cruz">
+    <input class="field bind" id="customerBusiness" placeholder="Customer Business" value="ABC Trading">
+    <textarea class="field bind" id="customerAddress" placeholder="Customer Address">123 Rizal St., Makati City</textarea>
+    <input class="field bind" id="customerTin" placeholder="Customer TIN (optional)" value="TIN: 123-456-789-000">
+  </div>
+
+  <div class="section">
+    <h4>Invoice Theme</h4>
+    <div class="theme">
+      <button id="lightBtn" class="active">☀<br>Light<br><small>Clean & Modern</small></button>
+      <button id="darkBtn">◐<br>Dark<br><small>Bold & Professional</small></button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h4>Accent Color</h4>
+    <div class="swatches">
+      <button class="swatch" data-color="#1769e0" data-name="Blue"><span class="dot" style="background:#1769e0"></span>Blue</button>
+      <button class="swatch" data-color="#16835b" data-name="Green"><span class="dot" style="background:#16835b"></span>Green</button>
+      <button class="swatch" data-color="#7048b8" data-name="Purple"><span class="dot" style="background:#7048b8"></span>Purple</button>
+      <button class="swatch" data-color="#d94141" data-name="Red"><span class="dot" style="background:#d94141"></span>Red</button>
+      <button class="swatch" data-color="#f47b35" data-name="Orange"><span class="dot" style="background:#f47b35"></span>Orange</button>
+      <button class="swatch" data-color="#159fa4" data-name="Teal"><span class="dot" style="background:#159fa4"></span>Teal</button>
+      <button class="swatch" data-color="#111827" data-name="Black"><span class="dot" style="background:#111827"></span>Black</button>
+      <button class="swatch" data-color="#ffffff" data-name="White"><span class="dot" style="background:#fff"></span>White</button>
+      <button class="swatch" data-color="#24548b" data-name="Navy"><span class="dot" style="background:#24548b"></span>Navy</button>
+      <button class="swatch" data-color="#687386" data-name="Gray"><span class="dot" style="background:#687386"></span>Gray</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h4>Company Logo</h4>
+    <label class="upload">▧<br><b>Upload Logo</b><br>PNG, JPG or SVG<br>(Max 2MB)
+      <input id="logo" type="file" accept="image/*">
+    </label>
+  </div>
+
+  <div class="section">
+    <h4>Invoice Items</h4>
+    <input class="field item-input" data-row="1" data-type="desc" placeholder="Description" value="Website Design">
+    <div style="display:grid;grid-template-columns:58px 1fr;gap:6px">
+      <input class="field item-input" data-row="1" data-type="qty" type="number" min="0" value="1" placeholder="Qty">
+      <input class="field item-input" data-row="1" data-type="price" type="number" min="0" value="5000" placeholder="Unit Price">
+    </div>
+    <input class="field item-input" data-row="2" data-type="desc" placeholder="Description" value="Monthly Maintenance">
+    <div style="display:grid;grid-template-columns:58px 1fr;gap:6px">
+      <input class="field item-input" data-row="2" data-type="qty" type="number" min="0" value="3" placeholder="Qty">
+      <input class="field item-input" data-row="2" data-type="price" type="number" min="0" value="1000" placeholder="Unit Price">
+    </div>
+    <input class="field item-input" data-row="3" data-type="desc" placeholder="Description" value="Logo Design">
+    <div style="display:grid;grid-template-columns:58px 1fr;gap:6px">
+      <input class="field item-input" data-row="3" data-type="qty" type="number" min="0" value="1" placeholder="Qty">
+      <input class="field item-input" data-row="3" data-type="price" type="number" min="0" value="2500" placeholder="Unit Price">
+    </div>
+  </div>
+
+  <div class="section">
+    <h4>Totals</h4>
+    <input class="field bind" id="discount" type="number" min="0" value="500" placeholder="Discount">
+    <input class="field bind" id="vat" type="number" min="0" value="12" placeholder="VAT %">
+    <textarea class="field bind" id="notes" placeholder="Notes / Remarks">Optional notes, payment terms, or other invoice information.</textarea>
+  </div>
+
+  <div class="section">
+    <h4>Include</h4>
+    <label class="check"><input type="checkbox" checked> Company TIN</label>
+    <label class="check"><input type="checkbox" checked> Terms & Conditions</label>
+    <label class="check"><input type="checkbox" checked> Notes / Remarks</label>
+  </div>
+
+  <button class="primary" id="downloadBtn">⇩ Download as PDF</button>
+</aside>
+
+<main class="main">
+  <div class="toolbar">
+    <div class="mode-pill">Light Mode (White Theme)</div>
+    <div class="mode-note">Live preview</div>
+    <div class="mode-pill dark">Dark Mode (Black Theme)</div>
+  </div>
+
+  <div class="previews">
+    <div class="preview-card" id="lightCard">
+      <div class="preview-label">LIGHT INVOICE</div>
+      <section class="paper light selected" id="lightPaper">
+        <div class="paper-head">
+          <div>
+            <div class="logo" id="lightLogo">◆</div>
+            <div class="biz" id="lightBusinessName">YOUR BUSINESS NAME</div>
+            <div class="small"><span id="lightTagline">Quality Products. Better Service.</span><br><span id="lightContact">+63 917 123 4567 · your@email.ph</span><br><span id="lightAddress">123 Business St., Makati City</span></div>
+          </div>
+          <div>
+            <div class="invtitle">INVOICE</div>
+            <div class="meta"><b>Invoice No.</b> <span id="lightInvoiceNumber">INV-2026-001</span><br><b>Date</b> <span id="lightInvoiceDate">September 20, 2026</span><br><b>Due Date</b> <span id="lightDueDate">October 20, 2026</span><br><b>Terms</b> <span id="lightTerms">Net 30</span></div>
+          </div>
+        </div>
+        <div class="bill">
+          <div class="card"><div class="label">Bill To</div><b id="lightCustomerName">Juan Dela Cruz</b><div class="small"><span id="lightCustomerBusiness">ABC Trading</span><br><span id="lightCustomerAddress">123 Rizal St., Makati City</span><br><span id="lightCustomerTin">TIN: 123-456-789-000</span></div></div>
+          <div class="card"><div class="label">Payment Terms</div><div class="small">Please settle the invoice according to the agreed payment terms.</div></div>
+        </div>
+        <table><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td id="lightDesc1">Website Design</td><td id="lightQty1">1</td><td id="lightPrice1">₱5,000.00</td><td id="lightAmount1">₱5,000.00</td></tr>
+            <tr><td>2</td><td id="lightDesc2">Monthly Maintenance</td><td id="lightQty2">3</td><td id="lightPrice2">₱1,000.00</td><td id="lightAmount2">₱3,000.00</td></tr>
+            <tr><td>3</td><td id="lightDesc3">Logo Design</td><td id="lightQty3">1</td><td id="lightPrice3">₱2,500.00</td><td id="lightAmount3">₱2,500.00</td></tr>
+          </tbody>
+        </table>
+        <div class="bottom">
+          <div class="note"><div class="label">Notes / Remarks</div><div class="note-text" id="lightNotes">Optional notes, payment terms, or other invoice information.</div></div>
+          <div class="summary"><div><span>Subtotal</span><b id="lightSubtotal">₱10,500.00</b></div><div><span>Discount</span><b id="lightDiscount">- ₱500.00</b></div><div><span>VAT (<span id="lightVatRate">12</span>%)</span><b id="lightVat">₱1,200.00</b></div><div class="total"><span>TOTAL</span><b id="lightTotal">₱11,200.00</b></div></div>
+        </div>
+        <div class="signature"><div class="sigline"></div>Authorized Signature</div>
+        <div class="footer" id="lightFooter">YOUR BUSINESS NAME</div>
+      </section>
+    </div>
+
+    <div class="preview-card" id="darkCard">
+      <div class="preview-label">DARK INVOICE</div>
+      <section class="paper dark" id="darkPaper">
+        <div class="paper-head">
+          <div>
+            <div class="logo" id="darkLogo">◆</div>
+            <div class="biz" id="darkBusinessName">YOUR BUSINESS NAME</div>
+            <div class="small"><span id="darkTagline">Quality Products. Better Service.</span><br><span id="darkContact">+63 917 123 4567 · your@email.ph</span><br><span id="darkAddress">123 Business St., Makati City</span></div>
+          </div>
+          <div>
+            <div class="invtitle">INVOICE</div>
+            <div class="meta"><b>Invoice No.</b> <span id="darkInvoiceNumber">INV-2026-001</span><br><b>Date</b> <span id="darkInvoiceDate">September 20, 2026</span><br><b>Due Date</b> <span id="darkDueDate">October 20, 2026</span><br><b>Terms</b> <span id="darkTerms">Net 30</span></div>
+          </div>
+        </div>
+        <div class="bill">
+          <div class="card"><div class="label">Bill To</div><b id="darkCustomerName">Juan Dela Cruz</b><div class="small"><span id="darkCustomerBusiness">ABC Trading</span><br><span id="darkCustomerAddress">123 Rizal St., Makati City</span><br><span id="darkCustomerTin">TIN: 123-456-789-000</span></div></div>
+          <div class="card"><div class="label">Payment Terms</div><div class="small">Please settle the invoice according to the agreed payment terms.</div></div>
+        </div>
+        <table><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td id="darkDesc1">Website Design</td><td id="darkQty1">1</td><td id="darkPrice1">₱5,000.00</td><td id="darkAmount1">₱5,000.00</td></tr>
+            <tr><td>2</td><td id="darkDesc2">Monthly Maintenance</td><td id="darkQty2">3</td><td id="darkPrice2">₱1,000.00</td><td id="darkAmount2">₱3,000.00</td></tr>
+            <tr><td>3</td><td id="darkDesc3">Logo Design</td><td id="darkQty3">1</td><td id="darkPrice3">₱2,500.00</td><td id="darkAmount3">₱2,500.00</td></tr>
+          </tbody>
+        </table>
+        <div class="bottom">
+          <div class="note"><div class="label">Notes / Remarks</div><div class="note-text" id="darkNotes">Optional notes, payment terms, or other invoice information.</div></div>
+          <div class="summary"><div><span>Subtotal</span><b id="darkSubtotal">₱10,500.00</b></div><div><span>Discount</span><b id="darkDiscount">- ₱500.00</b></div><div><span>VAT (<span id="darkVatRate">12</span>%)</span><b id="darkVat">₱1,200.00</b></div><div class="total"><span>TOTAL</span><b id="darkTotal">₱11,200.00</b></div></div>
+        </div>
+        <div class="signature"><div class="sigline"></div>Authorized Signature</div>
+        <div class="footer" id="darkFooter">YOUR BUSINESS NAME</div>
+      </section>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₱'+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function setText(prefix,id,value){
+  const el=$(prefix+id); if(el) el.textContent=value;
+}
+function updatePreview(){
+  const fields=[
+    ['BusinessName','businessName'],['Tagline','businessTagline'],['Contact','businessContact'],['Address','businessAddress'],
+    ['InvoiceNumber','invoiceNumber'],['InvoiceDate','invoiceDate'],['DueDate','dueDate'],['Terms','terms'],
+    ['CustomerName','customerName'],['CustomerBusiness','customerBusiness'],['CustomerAddress','customerAddress'],['CustomerTin','customerTin'],
+    ['Notes','notes'],['Footer','businessName']
+  ];
+  ['light','dark'].forEach(theme=>{
+    fields.forEach(([out,input])=>setText(theme,out,$(input).value));
+  });
+
+  let subtotal=0;
+  for(let i=1;i<=3;i++){
+    const desc=document.querySelector(`[data-row="${i}"][data-type="desc"]`).value;
+    const qty=Number(document.querySelector(`[data-row="${i}"][data-type="qty"]`).value||0);
+    const price=Number(document.querySelector(`[data-row="${i}"][data-type="price"]`).value||0);
+    const amount=qty*price; subtotal+=amount;
+    ['light','dark'].forEach(t=>{
+      setText(t,'Desc'+i,desc);
+      setText(t,'Qty'+i,qty);
+      setText(t,'Price'+i,money(price));
+      setText(t,'Amount'+i,money(amount));
+    });
+  }
+  const discount=Math.max(0,Number($('discount').value||0));
+  const vatRate=Math.max(0,Number($('vat').value||0));
+  const taxable=Math.max(0,subtotal-discount);
+  const vat=taxable*vatRate/100;
+  const total=taxable+vat;
+  ['light','dark'].forEach(t=>{
+    setText(t,'Subtotal',money(subtotal));
+    setText(t,'Discount','- '+money(discount));
+    setText(t,'Vat',money(vat));
+    setText(t,'VatRate',vatRate);
+    setText(t,'Total',money(total));
+  });
+}
+
+document.querySelectorAll('.bind,.item-input').forEach(el=>el.addEventListener('input',updatePreview));
+
+function contrastFor(c){
+  const hex=c.replace('#','');
+  if(hex.length!==6)return '#fff';
+  const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+  return ((r*299+g*587+b*114)/1000)>170?'#17233a':'#fff';
+}
+function softFor(c){
+  if(c.toLowerCase()==='#ffffff')return '#f3f5f8';
+  if(c.toLowerCase()==='#111827')return '#eef0f3';
+  return `color-mix(in srgb, ${c} 10%, #fff)`;
+}
+function applyAccent(c){
+  const text=contrastFor(c), soft=softFor(c);
+  document.querySelectorAll('.paper').forEach(p=>{
+    p.style.setProperty('--accent',c);
+    p.style.setProperty('--accentText',text);
+    p.style.setProperty('--accentSoft',soft);
+  });
+}
+document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click',()=>applyAccent(b.dataset.color)));
+
+let selected='light';
+function selectTheme(theme){
+  selected=theme;
+  $('lightBtn').classList.toggle('active',theme==='light');
+  $('darkBtn').classList.toggle('active',theme==='dark');
+  $('lightPaper').classList.toggle('selected',theme==='light');
+  $('darkPaper').classList.toggle('selected',theme==='dark');
+}
+$('lightBtn').addEventListener('click',()=>selectTheme('light'));
+$('darkBtn').addEventListener('click',()=>selectTheme('dark'));
+
+$('logo').addEventListener('change',e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  if(f.size>2*1024*1024){alert('Please use a logo under 2MB.');e.target.value='';return;}
+  const r=new FileReader();
+  r.onload=ev=>['lightLogo','darkLogo'].forEach(id=>$(id).innerHTML='<img src="'+ev.target.result+'" alt="Business logo">');
+  r.readAsDataURL(f);
+});
+
+$('downloadBtn').addEventListener('click',()=>{
+  document.querySelectorAll('.preview-card').forEach(c=>c.classList.remove('print-selected'));
+  $(selected+'Card').classList.add('print-selected');
+  window.print();
+});
+
+applyAccent('#1769e0');
+updatePreview();
+selectTheme('light');
+</script>
+</body>
+</html>
